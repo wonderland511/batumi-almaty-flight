@@ -393,12 +393,6 @@
     line-height: 1.6;
   }
 
-  .fade-in{ opacity: 0; }
-
-  @media (prefers-reduced-motion: reduce){
-    .fade-in{ opacity: 1 !important; }
-  }
-
   @media (max-width: 560px){
     .leg{ grid-template-columns: 1fr; text-align:left; gap: 20px; }
     .leg .point.dest{ text-align:left; }
@@ -591,24 +585,30 @@
 
 </div>
 
+  <!-- Контент по умолчанию полностью видим (без opacity:0 в CSS) — анимация ниже лишь
+       мягко усиливает уже видимую страницу и не может её скрыть, даже если CDN-скрипт
+       не загрузится (офлайн, блокировщик, медленная сеть). -->
 <script type="module">
-  import { animate, inView, stagger } from "https://cdn.jsdelivr.net/npm/motion@11/+esm";
-
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduceMotion) { /* ничего не делаем — контент уже видим и статичен */ }
+  else {
+    try {
+      const { animate, inView, stagger } = await import("https://cdn.jsdelivr.net/npm/motion@11/+esm");
 
-  if (!reduceMotion) {
-    inView("[data-animate]", (el) => {
-      animate(el, { opacity: [0, 1], y: [20, 0] }, { duration: 0.6, easing: [0.22, 1, 0.36, 1] });
-    }, { margin: "0px 0px -10% 0px" });
+      inView("[data-animate]", (el) => {
+        animate(el, { opacity: [0, 1], y: [20, 0] }, { duration: 0.6, easing: [0.22, 1, 0.36, 1] });
+      }, { margin: "0px 0px -10% 0px" });
 
-    animate(".fare-card", { opacity: [0, 1], y: [24, 0] }, { duration: 0.5, delay: stagger(0.1), easing: [0.22, 1, 0.36, 1] });
+      animate(".fare-card", { opacity: [0, 1], y: [24, 0] }, { duration: 0.5, delay: stagger(0.1), easing: [0.22, 1, 0.36, 1] });
 
-    document.querySelectorAll('.fare-cta, .book-link').forEach((btn) => {
-      btn.addEventListener('mouseenter', () => animate(btn, { scale: 1.03 }, { duration: 0.2 }));
-      btn.addEventListener('mouseleave', () => animate(btn, { scale: 1 }, { duration: 0.2 }));
-    });
-  } else {
-    document.querySelectorAll('[data-animate], .fare-card').forEach(el => el.style.opacity = 1);
+      document.querySelectorAll('.fare-cta, .book-link').forEach((btn) => {
+        btn.addEventListener('mouseenter', () => animate(btn, { scale: 1.03 }, { duration: 0.2 }));
+        btn.addEventListener('mouseleave', () => animate(btn, { scale: 1 }, { duration: 0.2 }));
+      });
+    } catch (e) {
+      // CDN недоступен — страница остаётся статичной, но полностью читаемой
+      console.warn("Анимации не загрузились, показывается статичная версия страницы", e);
+    }
   }
 
   // Theme toggle
